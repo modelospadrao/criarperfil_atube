@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Gerador Avançado de Perfil de Conversão Atube (FFmpeg)</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    label { font-weight: bold; display: block; margin-top: 10px; }
+    select, input, textarea { width: 100%; padding: 5px; margin-top: 5px; }
+    button { margin-top: 15px; padding: 10px 20px; cursor: pointer; }
+    textarea { height: 300px; }
+    .row { display: flex; gap: 10px; }
+    .row > * { flex: 1; }
+    .button-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+    .button-group button { padding: 6px 10px; }
+    .selected { background-color: black !important; color: white !important; }
+    .tooltip { position: relative; display: inline-block; }
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 180px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      padding: 5px;
+      border-radius: 6px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%; left: 50%; margin-left: -90px;
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+      justify-content: center;   /* centraliza os botões no container */
+    }
+
+    .tooltip {
+      /* garante que a dica não seja cortada pelo overflow do container */
+      overflow: visible;
+    }
+
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 200px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      padding: 5px;
+      border-radius: 6px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;                 /* posiciona no meio do botão */
+      transform: translateX(-50%); /* ajusta centralização exata */
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+    }
+    .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+  </style>
+</head>
+<body>
+  <h2>Gerador Avançado de Perfil de Conversão Atube (FFmpeg)</h2>
+
+  <label for="profileName">Nome do Perfil</label>
+  <input type="text" id="profileName" placeholder="Ex: Perfil Vídeo H.265 com Áudio Opus" onchange="gerarXML()">
+
+  <label for="fileFormat">Formato do Arquivo (Extensão)</label>
+  <select id="fileFormat" onchange="gerarXML()">
+    <option value="mp4">MP4</option>
+    <option value="mkv">MKV</option>
+    <option value="webm">WEBM</option>
+    <option value="mp3">MP3</option>
+    <option value="flac">FLAC</option>
+    <option value="aac">AAC</option>
+    <option value="wav">WAV</option>
+    <option value="ac3">AC3</option>
+    <option value="ogg">OGG</option>
+  </select>
+
+  <label for="fpsvideo">FPS</label>
+  <select id="fpsvideo" onchange="gerarXML()">
+    <option value="Auto">Auto</option>
+    <option value="24">24</option>
+    <option value="25">25</option>
+    <option value="30">30</option>
+    <option value="50">50</option>
+    <option value="60">60</option>
+    <option value="30/1001">29.97 (30/1001)</option>
+    <option value="24/1001">23.976 (24/1001)</option>
+    <option value="60/1001">59.94 (60/1001)</option>
+    
+  </select>
+
+  
+  <label for="videoCodec">Codec de Vídeo</label>
+  <select id="videoCodec" onchange="gerarXML()">
+    <option value="libx264">H.264 (libx264)</option>
+    <option value="libx265">H.265 (libx265)</option>
+    <option value="h264_nvenc">H.264 NVENC (GPU)</option>
+    <option value="hevc_nvenc">H.265 NVENC (GPU)</option>
+    <option value="vp9">VP9</option>
+    <option value="av1">AV1 (CPU)</option>
+    <option value="av1_nvenc">AV1 NVENC (GPU)</option>
+    <option value="mpeg4">MPEG-4</option>
+    <option value="copy">Copiar Vídeo</option>
+  </select>
+
+  <label for="resolucao">Resolução de Vídeo</label>
+  <select id="resolucao" onchange="gerarXML()">
+    <option value="Auto">Automática</option>
+    <option value="3840x2160">4K (3840x2160)</option>
+    <option value="2560x1440">2K (2560x1440)</option>
+    <option value="1920x1080">Full HD (1920x1080)</option>
+    <option value="1280x720">HD (1280x720)</option>
+    <option value="854x480">SD (854x480)</option>
+    <option value="640x360">360p (640x360)</option>
+  </select>
+
+  <label>Bitrate de Vídeo</label>
+  <div class="row">
+    <select id="videoBitratePreset" onchange="onVideoBitrateChange()">
+      <option value="Auto">Auto</option>
+      <option value="1000">1000</option>
+      <option value="2000">2000</option>
+      <option value="3000">3000</option>
+      <option value="4000">4000</option>
+      <option value="Custom">Personalizado</option>
+    </select>
+    <input type="number" id="videoBitrateCustom" placeholder="Digite valor" disabled onchange="onVideoBitrateChange()">
+  </div>
+  <label><input type="checkbox" id="disableVideoBitrate" onchange="toggleVideoBitrate()"> Desabilitar Bitrate de Vídeo</label>
+
+  <label for="audioCodec">Codec de Áudio</label>
+  <select id="audioCodec" onchange="gerarXML()">
+    <option value="aac">AAC</option>
+    <option value="ac3">AC3</option>
+    <option value="mp3">MP3</option>
+    <option value="opus">Opus</option>
+    <option value="flac">FLAC</option>
+    <option value="copy">Copiar Áudio</option>
+  </select>
+
+  <label for="bitrate">Bitrate do Áudio (kbps)</label>
+  <select id="bitrate" onchange="gerarXML()">
+    <option value="128">128</option>
+    <option value="192">192</option>
+    <option value="256">256</option>
+    <option value="320">320</option>
+    <option value="384">384</option>
+    <option value="448">448</option>
+    <option value="512">512</option>
+  </select>
+
+  <label for="sampling">Frequência de Amostragem</label>
+  <select id="sampling" onchange="gerarXML()">
+    <option value="44100">44100</option>
+    <option value="48000" selected>48000</option>
+    <option value="96000">96000</option>
+    <option value="192000">192000</option>
+  </select>
+
+  <label for="channels">Canais</label>
+  <select id="channels" onchange="gerarXML()">
+    <option value="Stereo">Stereo</option>
+    <option value="5.1">5.1</option>
+    <option value="7.1">7.1</option>
+  </select>
+
+  <label for="crf">CRF (Qualidade Visual)</label>
+  <input type="range" id="crf" min="0" max="51" value="23" oninput="updateCRF()">
+  <div id="crfValue">CRF 23 - Qualidade Boa</div>
+
+  <label>Parâmetros Extras</label>
+  <div class="button-group" id="paramButtons">
+    <!-- Exemplos de botões extras -->
+    <div class="tooltip"><button type="button" onclick="toggleParam(this,'-threads max')">Núcleos Máx</button><span class="tooltiptext">Usa todos os núcleos da CPU</span></div>
+    <div class="tooltip"><button type="button" onclick="toggleParam(this,'-profile:v baseline')">Perfil Baseline</button><span class="tooltiptext">Perfil H.264/H.265 Baseline (máxima compatibilidade)</span></div>
+    <div class="tooltip"><button type="button" onclick="toggleParam(this,'-profile:v main')">Perfil Main (H.265)</button><span class="tooltiptext">Perfil H.265 Main (compatível com dispositivos modernos)</span></div>
+    <div class="tooltip"><button type="button" onclick="toggleParam(this,'-profile:v main10')">Perfil Main10 (H.265)</button><span class="tooltiptext">Perfil H.265 Main10 (10-bit, maior qualidade)</span></div>
+    <div class="tooltip"><button type="button" onclick="toggleParam(this,'-profile:v high')">Perfil High</button><span class="tooltiptext">Perfil H.264/H.265 High (qualidade elevada)</span></div>
+    <div class="tooltip"><button type="button" onclick="toggleParam(this,'-level 3.0')">Nível 3.0</button><span class="tooltiptext">Compatibilidade nível 3.0: dispositivos antigos e padrões SD</span></div>
+    <div class="tooltip"><button type="button" onclick="toggleParam(this,'-level 5.1')">Nível 5.1</button><span class="tooltiptext">Compatibilidade nível 5.1: suporta 4K e bitrates altos</span></div>
+    <div class="tooltip"><button type="button" onclick="toggleParam(this,'-preset slow')">Preset Slow</button><span class="tooltiptext">Preset slow (equilíbrio qualidade vs tempo)</span></div>
+  </div>
+
+  <label for="filename">Nome do Arquivo (.apf)</label>
+  <input type="text" id="filename" placeholder="perfil.apf">
+
+  <button onclick="copiarXML()">Copiar XML</button>
+  <button onclick="salvarXML()">Salvar XML</button>
+
+  <label for="output">XML Gerado</label>
+  <textarea id="output" readonly></textarea>
+
+  <script>
+    // Global set of extra parameters
+    const parametrosExtras = new Set();
+
+    function toggleParam(btn, value) {
+      if (parametrosExtras.has(value)) {
+        parametrosExtras.delete(value);
+        btn.classList.remove('selected');
+      } else {
+        parametrosExtras.add(value);
+        btn.classList.add('selected');
+      }
+      gerarXML();
+    }
+
+    function onVideoBitrateChange() {
+      const preset = document.getElementById('videoBitratePreset').value;
+      const custom = document.getElementById('videoBitrateCustom');
+      custom.disabled = preset !== 'Custom';
+      toggleVideoBitrate();
+    }
+
+    function toggleVideoBitrate() {
+      const disable = document.getElementById('disableVideoBitrate').checked;
+      const presetElem = document.getElementById('videoBitratePreset');
+      const customElem = document.getElementById('videoBitrateCustom');
+      const crfElem = document.getElementById('crf');
+
+      presetElem.disabled = disable;
+      customElem.disabled = disable || presetElem.value !== 'Custom';
+
+      const usingBitrate = !disable && presetElem.value !== 'Auto';
+      crfElem.disabled = usingBitrate;
+      if (!crfElem.disabled) updateCRF();
+
+      gerarXML();
+    }
+
+    function updateCRF() {
+      const crfInput = document.getElementById('crf');
+      const display = document.getElementById('crfValue');
+      const crf = crfInput.value;
+      let qualidade = 'Excelente';
+      if (crf > 35) qualidade = 'Muito Baixa';
+      else if (crf > 28) qualidade = 'Baixa';
+      else if (crf > 23) qualidade = 'Média';
+      else if (crf > 18) qualidade = 'Boa';
+      display.innerText = `CRF ${crf} - Qualidade ${qualidade}`;
+      gerarXML();
+    }
+
+    function gerarXML() {
+      const name = document.getElementById('profileName').value;
+      const vcodec = document.getElementById('videoCodec').value;
+      const acodec = document.getElementById('audioCodec').value;
+      const sampling = document.getElementById('sampling').value;
+      const channels = document.getElementById('channels').value;
+      const formato = document.getElementById('fileFormat').value;
+      const resolucao = document.getElementById('resolucao').value;
+      const fps = document.getElementById('fpsvideo').value;
+
+      const disable = document.getElementById('disableVideoBitrate').checked;
+      const preset = document.getElementById('videoBitratePreset').value;
+      const customVal = document.getElementById('videoBitrateCustom').value;
+      let videoBitrate = 'Auto';
+      if (!disable) {
+        if (preset === 'Custom' && customVal) {
+          videoBitrate = customVal;
+        } else if (preset !== 'Auto') {
+          videoBitrate = preset;
+        }
+      }
+
+      const somenteAudio = ['mp3','flac','aac','ac3','wav','ogg'];
+      const crfInput = document.getElementById('crf');
+      const usingBitrate = !disable && preset !== 'Auto';
+      crfInput.disabled = usingBitrate || somenteAudio.includes(formato);
+      const crf = crfInput.disabled ? 'Auto' : crfInput.value;
+
+      parametrosExtras.forEach(p => { if (p.startsWith('-crf')) parametrosExtras.delete(p); });
+      parametrosExtras.add(`-crf ${crf}`);
+      const parameters = [...parametrosExtras].join(' ') || '-threads max';
+
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<Template>\n` +
+        `  <Name><![CDATA[${name}]]></Name>\n` +
+        `  <Parameters>${parameters}</Parameters>\n` +
+        `  <VideoSettings>\n` +
+        `    <Use_VariableBitRate>1</Use_VariableBitRate>\n` +
+        `    <VideoBitRate>${videoBitrate}</VideoBitRate>\n` +
+        `    <Resolution>${resolucao}</Resolution>\n` +
+        `    <Aspect>Auto</Aspect>\n` +
+        `    <Codec>${vcodec}</Codec>\n` +
+        `    <Header_Tag>Auto</Header_Tag>\n` +
+        `    <syncMethod>None</syncMethod>\n` +
+        `    <MotionEstimation>Default</MotionEstimation>\n` +
+        `    <FrameRate>${fps}</FrameRate>\n` +
+        `    <2PassEncoding>0</2PassEncoding>\n` +
+        `    <RemoveVideo>0</RemoveVideo>\n` +
+        `    <MPEG4HQ>0</MPEG4HQ>\n` +
+        `  </VideoSettings>\n` +
+        `  <Format>${acodec.toUpperCase()}</Format>\n` +
+        `  <AudioSettings>\n` +
+        `    <Channels>${channels}</Channels>\n` +
+        `    <BitRate>${bitrate}</BitRate>\n` +
+        `    <Codec>${acodec}</Codec>\n` +
+        `    <Sampling>${sampling}</Sampling>\n` +
+        `    <syncMethod>01</syncMethod>\n` +
+        `    <Header_Tag>Auto</Header_Tag>\n` +
+        `    <RemoveAudio>0</RemoveAudio>\n` +
+        `  </AudioSettings>\n` +
+        `  <FileSettings>\n` +
+        `    <LimitDuration>0</LimitDuration>\n` +
+        `    <MaxDuration>0</MaxDuration>\n` +
+        `    <TimeOffsetEnabled>0</TimeOffsetEnabled>\n` +
+        `    <TimeOffset>00:00:00.000</TimeOffset>\n` +
+        `    <SizeLimit>0 MB</SizeLimit>\n` +
+        `    <FileFormat>${formato}</FileFormat>\n` +
+        `    <SpecificTarget>custom</SpecificTarget>\n` +
+        `  </FileSettings>\n` +
+        `</Template>`;
+
+      document.getElementById("output").value = xml;
+    }
+
+    function copiarXML() {
+      const output = document.getElementById("output");
+      output.select();
+      document.execCommand("copy");
+      alert("XML copiado para a área de transferência!");
+    }
+
+    function salvarXML() {
+      const filename = document.getElementById("filename").value || "perfil.apf";
+      const xmlContent = document.getElementById("output").value;
+      const blob = new Blob([xmlContent], { type: 'application/octet-stream' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+    }
+  </script>
+</body>
+</html>
